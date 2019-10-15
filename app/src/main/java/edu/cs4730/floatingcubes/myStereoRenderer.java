@@ -25,6 +25,7 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
     private static final float Z_FAR = 100.0f;
 
     private static final float CAMERA_Z = 0.01f;
+    private static final float COLLISON_OFFSET = 0.3f;
 
     public Cube mCube;
     public Pyramid mPyramid;
@@ -32,7 +33,7 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
 
     private float objectDistance = 6f;
     private float floorDepth = 20f;
-    final private float STEP = 0.03f;
+    final private float STEP = 0.05f;
     final private int puzzleSize = 5;
     final private int puzzleCubeLength = puzzleSize*puzzleSize*puzzleSize;
     final private float[] puzzleOffsets = new float[]{-2, -2, -10};
@@ -122,16 +123,11 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
         headTransform.getForwardVector(forwardVector, 0);
         for (int i = 0; i < 3; i++) {
             userShift[i] = forwardVector[i] * STEP;
-            if(Math.round(userPosition[i]+userShift[i]) == Math.round(userPosition[i])){//still in the same cell
-                userPosition[i] += userShift[i];
-            }
-            else {
-                userPosition[i] += userShift[i];
-                if (isInPuzzle()) {
-                    if (isCrash()) {
-                        userPosition[i] -= userShift[i];
-                        userShift[i] = 0;
-                    }
+            userPosition[i] += userShift[i];
+            if (isInPuzzle()) {
+                if (isCrash(i)) {
+                    userPosition[i] -= userShift[i];
+                    userShift[i] = 0;
                 }
             }
         }
@@ -257,17 +253,30 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
 
     private boolean isInPuzzle(){
         for (int i = 0; i < 3; i++) {
-            int cell = Math.round(userPosition[i]);
-            if( cell < puzzleOffsets[i] || cell > puzzleOffsets[i]+puzzleSize-1 )
+            int cell1 = Math.round(userPosition[i]+COLLISON_OFFSET);
+            int cell2 = Math.round(userPosition[i]-COLLISON_OFFSET);
+            if( cell1 < puzzleOffsets[i] || cell2 > puzzleOffsets[i]+puzzleSize-1 )
                 return false;
         }
         return true;
     }
 
-    private boolean isCrash(){
+    private boolean isCrash(int coord){
         int[] cellPosition = new int[3];
         for (int i = 0; i < 3; i++) {
-            cellPosition[i] = Math.round(userPosition[i]-puzzleOffsets[i]);
+            if(i == coord) {
+                if (userShift[i] > 0)
+                    cellPosition[i] = Math.round(userPosition[i] - puzzleOffsets[i]+COLLISON_OFFSET);
+                else
+                    cellPosition[i] = Math.round(userPosition[i] - puzzleOffsets[i]-COLLISON_OFFSET);
+            }
+            else{
+                cellPosition[i] = Math.round(userPosition[i] - puzzleOffsets[i]);
+            }
+        }
+        for (int i = 0; i < cellPosition.length; i++) {
+            if(cellPosition[i] < 0 || cellPosition[i] >= puzzleSize)//out of range
+                return false;
         }
         int cubeIndex = cellPosition[0]*puzzleSize*puzzleSize + cellPosition[1]*puzzleSize + cellPosition[2];
         if(puzzleMap[cubeIndex]) return true;
