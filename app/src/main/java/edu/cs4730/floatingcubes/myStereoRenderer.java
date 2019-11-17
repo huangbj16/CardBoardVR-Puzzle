@@ -1,5 +1,6 @@
 package edu.cs4730.floatingcubes;
 
+import android.content.Context;
 import android.opengl.GLES30;
 import android.opengl.Matrix;
 import android.util.Log;
@@ -8,6 +9,7 @@ import com.google.vr.sdk.base.GvrView;
 import com.google.vr.sdk.base.Eye;
 import com.google.vr.sdk.base.HeadTransform;
 import com.google.vr.sdk.base.Viewport;
+import com.google.vr.sdk.audio.*;
 
 import javax.microedition.khronos.egl.EGLConfig;
 
@@ -42,12 +44,14 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
     private float[] camera;
     private float[] view;
     private float[] headView;
+    private float[] headRotation;
     private float[] modelview;
     private float[] mMVPMatrix;
     private float[] forwardVector;
     private float[] userPosition;
     private float[] userShift;
     private boolean[] puzzleMap;
+    private float[] mosquitoPosition;
 
     private float[] modelFloor;
 
@@ -59,6 +63,17 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
 
     private final float[] lightPosInEyeSpace = new float[4];
 
+    private GvrAudioEngine gvrAudioEngine;
+    private volatile int sourceId = GvrAudioEngine.INVALID_ID;
+    private volatile int successSourceId = GvrAudioEngine.INVALID_ID;
+    private Context myContext;
+    private static final String OBJECT_SOUND_FILE = "audio/mosquito.mp3";
+    private static final String FIND_SOUND_FILE = "audio/HelloVR_Activation.ogg";
+    private MosquitoPlayer mosquitoPlayer;
+
+    public myStereoRenderer(Context context){
+        this.myContext = context;
+    }
     ///
     // Create a shader object, load the shader source, and
     // compile the shader.
@@ -152,6 +167,28 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
         Matrix.setLookAtM(camera, 0, 0.0f, 0.0f, CAMERA_Z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
 
         headTransform.getHeadView(headView, 0);
+        headTransform.getQuaternion(headRotation, 0);
+
+        if(isMetMosquito()){
+            successSourceId = gvrAudioEngine.createStereoSound(FIND_SOUND_FILE);
+            gvrAudioEngine.playSound(successSourceId, false /* looping disabled */);
+            resetPosition();
+        }
+
+        gvrAudioEngine.setHeadPosition(userPosition[0], userPosition[1], userPosition[2]);
+        gvrAudioEngine.setHeadRotation(
+                headRotation[0], headRotation[1], headRotation[2], headRotation[3]);
+        // Regular update call to GVR audio engine.
+        gvrAudioEngine.update();
+    }
+
+    private boolean isMetMosquito(){
+        float dist = 0;
+        for (int i = 0; i < 3; i++) {
+            dist += (userPosition[i]-mosquitoPosition[i]) * (userPosition[i]-mosquitoPosition[i]);
+        }
+        if(dist < 0.1) return true;
+        return false;
     }
 
     /**
@@ -210,10 +247,12 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
         mMVPMatrix = new float[16];
         modelview = new float[16];
         headView = new float[16];
+        headRotation = new float[4];
         modelFloor = new float[16];
         forwardVector = new float[3];
         userPosition = new float[]{0, 0, 0};
         userShift = new float[]{0, 0, 0};
+        mosquitoPosition = new float[]{0, 0, -4};
         generator = new PuzzleGenerator();
         puzzleMap = generator.generatePuzzle(puzzleSize);
 
@@ -244,6 +283,24 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
         Matrix.setIdentityM(modelFloor, 0);
         Matrix.translateM(modelFloor, 0, 0, -floorDepth, 0); // Floor appears below user.
 
+        gvrAudioEngine = new GvrAudioEngine(myContext, GvrAudioEngine.RenderingMode.BINAURAL_HIGH_QUALITY);
+
+        new Thread(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        // Start spatial audio playback of OBJECT_SOUND_FILE at the model position. The
+                        // returned sourceId handle is stored and allows for repositioning the sound object
+                        // whenever the target position changes.
+                        gvrAudioEngine.preloadSoundFile(OBJECT_SOUND_FILE);
+                        sourceId = gvrAudioEngine.createSoundObject(OBJECT_SOUND_FILE);
+                        gvrAudioEngine.setSoundObjectPosition(
+                                sourceId, mosquitoPosition[0], mosquitoPosition[1], mosquitoPosition[2]);
+                        gvrAudioEngine.playSound(sourceId, true /* looped playback */);
+                        gvrAudioEngine.preloadSoundFile(FIND_SOUND_FILE);
+                    }
+                })
+                .start();
     }
 
     @Override
@@ -291,6 +348,10 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
         for (int i = 0; i < 3; i++) {
             userPosition[i] = 0;
         }
+        gvrAudioEngine.setHeadPosition(userPosition[0], userPosition[1], userPosition[2]);
+        gvrAudioEngine.setHeadRotation(
+                headRotation[0], headRotation[1], headRotation[2], headRotation[3]);
+        gvrAudioEngine.update();
     }
 
     public void printMatrix(float[] matrix, String name){//column priority

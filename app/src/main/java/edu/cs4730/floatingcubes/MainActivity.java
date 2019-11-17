@@ -27,7 +27,7 @@ public class MainActivity extends GvrActivity  {
 
         //setup the cardbardview and set the renderer for it.
         GvrView gvrView = (GvrView) findViewById(R.id.cardboard_view);
-        stereoRenderer = new myStereoRenderer();
+        stereoRenderer = new myStereoRenderer(this);
         gvrView.setRenderer(stereoRenderer);
         setGvrView(gvrView);
 
