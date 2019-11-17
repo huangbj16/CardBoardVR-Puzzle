@@ -26,30 +26,31 @@ import android.os.Bundle;
 import android.support.annotation.ColorRes;
 import android.util.Log;
 
-import com.viro.core.AmbientLight;
-import com.viro.core.AsyncObject3DListener;
-import com.viro.core.Box;
-import com.viro.core.Camera;
-import com.viro.core.ClickListener;
-import com.viro.core.ClickState;
-import com.viro.core.Geometry;
-import com.viro.core.Material;
-import com.viro.core.Node;
-
-import com.viro.core.Object3D;
-import com.viro.core.OmniLight;
-import com.viro.core.Scene;
-import com.viro.core.Sphere;
-import com.viro.core.Spotlight;
-import com.viro.core.Text;
-import com.viro.core.Texture;
-import com.viro.core.TouchState;
-import com.viro.core.TouchpadTouchListener;
-import com.viro.core.Vector;
-import com.viro.core.ViroView;
-import com.viro.core.ViroViewGVR;
-import com.viro.core.ViroViewOVR;
-import com.viro.renderer.BuildConfig;
+import com.viro.core.*;
+//import com.viro.core.AmbientLight;
+//import com.viro.core.AsyncObject3DListener;
+//import com.viro.core.Box;
+//import com.viro.core.Camera;
+//import com.viro.core.ClickListener;
+//import com.viro.core.ClickState;
+//import com.viro.core.Geometry;
+//import com.viro.core.Material;
+//import com.viro.core.Node;
+//
+//import com.viro.core.Object3D;
+//import com.viro.core.OmniLight;
+//import com.viro.core.Scene;
+//import com.viro.core.Sphere;
+//import com.viro.core.Spotlight;
+//import com.viro.core.Text;
+//import com.viro.core.Texture;
+//import com.viro.core.TouchState;
+//import com.viro.core.TouchpadTouchListener;
+//import com.viro.core.Vector;
+//import com.viro.core.ViroView;
+//import com.viro.core.ViroViewGVR;
+//import com.viro.core.ViroViewOVR;
+//import com.viro.renderer.BuildConfig;
 
 import java.io.File;
 import java.io.IOException;
@@ -434,25 +435,56 @@ public class ViroActivityVR extends Activity {
         cameraNode.setRotation(new Vector(0, 0, 0));
         Camera camera = new Camera();
         cameraNode.setCamera(camera);
-        scene.getRootNode().addChildNode(cameraNode);
+        rootNode.addChildNode(cameraNode);
         mViroView.setPointOfView(cameraNode);
 
-//        // Create a Text geometry
-//        Text helloWorldText = new Text.TextBuilder().viroContext(mViroView.getViroContext()).
-//                textString("Hello World").
-//                fontFamilyName("Roboto").fontSize(50).
-//                color(Color.WHITE).
-//                width(4).height(2).
-//                horizontalAlignment(Text.HorizontalAlignment.CENTER).
-//                verticalAlignment(Text.VerticalAlignment.CENTER).
-//                lineBreakMode(Text.LineBreakMode.NONE).
-//                clipMode(Text.ClipMode.CLIP_TO_BOUNDS).
-//                maxLines(1).build();
-//
-////        // Create a Node, position it, and attach the Text geometry to it
-//        Node textNode = new Node();
-//        textNode.setPosition(new Vector(0, 0, -2));
-//        textNode.setGeometry(helloWorldText);
+//        Object3D bird = new Objec3D();
+//        bird.loadModel(Uri.parse("bird.vrx"), Type.FBX, new AsyncObject3DListener() {
+//            public void onObject3DFailed(String error) {
+//                Log.w(TAG, "Failed to load the model");
+//            }
+//            public void onObject3DLoaded(Object3D object, Object3D.Type type)
+//                // Start chirping after the bird is loaded
+//                chirp.play();
+//            }
+//        ));
+
+//        Node mosquitoNode = new Node();
+////        node.addChildNode(bird);
+//        mosquitoNode.setPosition(new Vector(0, 0, -2));
+//        mosquitoNode.addSound(chirp);
+//        rootNode.addChildNode(mosquitoNode);
+
+        // Create a Text geometry
+        Text helloWorldText = new Text.TextBuilder().viroContext(mViroView.getViroContext()).
+                textString("Hello World").
+                fontFamilyName("Roboto").fontSize(50).
+                color(Color.WHITE).
+                width(4).height(2).
+                horizontalAlignment(Text.HorizontalAlignment.CENTER).
+                verticalAlignment(Text.VerticalAlignment.CENTER).
+                lineBreakMode(Text.LineBreakMode.NONE).
+                clipMode(Text.ClipMode.CLIP_TO_BOUNDS).
+                maxLines(1).build();
+
+//        // Create a Node, position it, and attach the Text geometry to it
+        String mosquitoFilePath = "file:///android_asset/chirp.mp3";
+        Sound chirp = new Sound(mViroView.getViroContext(), Uri.parse(mosquitoFilePath), null);
+        chirp.setLoop(true);
+        chirp.setVolume(1.0f);
+        chirp.play();
+
+        Node textNode = new Node();
+        textNode.setPosition(new Vector(0, 0, -2));
+//        textNode.addSound(chirp);
+        textNode.setGeometry(helloWorldText);
+        rootNode.addChildNode(textNode);
+
+        // Animate the bird to the right; this will animate the chirp sound as well
+//        AnimationTransaction.begin();
+//        AnimationTransaction.setAnimationDuration(10000);
+//        textNode.setPosition(new Vector(10, 0, 0));
+//        AnimationTransaction.commit();
 ////
 ////        // Attach the textNode to the Scene's rootNode.
 //        rootNode.addChildNode(textNode);

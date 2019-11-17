@@ -53,4 +53,5 @@ dependencies {
     implementation 'com.amazonaws:aws-android-sdk-ddb-mapper:2.2.+'
     implementation 'com.amazonaws:aws-android-sdk-cognito:2.2.+'
     implementation 'com.amazonaws:aws-android-sdk-cognitoidentityprovider:2.2.+'
+    implementation files('D:\\2019autumn\\vrcourse\\CardBoardVR-Puzzle\\app\\build\\libraries\\sdk-audio-1.190.0.aar')
 }
