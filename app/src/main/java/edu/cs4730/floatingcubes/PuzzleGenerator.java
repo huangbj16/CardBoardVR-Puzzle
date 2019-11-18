@@ -19,15 +19,26 @@ public class PuzzleGenerator {
     }
 
     PuzzleGenerator(){
-        pathLength = 8;
+        pathLength = 19;
         pathCoord = new int[pathLength][3];
-        pathCoord[0] = new int[]{1, 1, 4};
-        pathCoord[1] = new int[]{1, 1, 3};
-        pathCoord[2] = new int[]{2, 1, 3};
-        pathCoord[3] = new int[]{3, 1, 3};
-        pathCoord[4] = new int[]{3, 1, 2};
-        pathCoord[5] = new int[]{3, 2, 2};
-        pathCoord[6] = new int[]{3, 2, 1};
-        pathCoord[7] = new int[]{3, 2, 0};
+        pathCoord[0] = new int[]{3, 3, 3};
+        pathCoord[1] = new int[]{3, 3, 4};
+        pathCoord[2] = new int[]{3, 3, 5};
+        pathCoord[3] = new int[]{3, 2, 5};
+        pathCoord[4] = new int[]{3, 1, 5};
+        pathCoord[5] = new int[]{3, 1, 4};
+        pathCoord[6] = new int[]{3, 3, 2};
+        pathCoord[7] = new int[]{3, 3, 1};
+        pathCoord[8] = new int[]{3, 4, 1};
+        pathCoord[9] = new int[]{4, 4, 1};
+        pathCoord[10] = new int[]{4, 4, 0};
+        pathCoord[11] = new int[]{2, 3, 3};
+        pathCoord[12] = new int[]{1, 3, 3};
+        pathCoord[13] = new int[]{1, 4, 3};
+        pathCoord[14] = new int[]{1, 5, 3};
+        pathCoord[15] = new int[]{4, 3, 3};
+        pathCoord[16] = new int[]{5, 3, 3};
+        pathCoord[17] = new int[]{5, 3, 4};
+        pathCoord[18] = new int[]{5, 3, 5};
     }
 }

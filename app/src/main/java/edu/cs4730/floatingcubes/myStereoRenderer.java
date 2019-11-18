@@ -30,15 +30,16 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
     private static final float COLLISON_OFFSET = 0.3f;
 
     public Cube mCube;
+    public Polygon fakeMosquito;
     public Pyramid mPyramid;
     public Floor mFloor;
 
     private float objectDistance = 6f;
     private float floorDepth = 20f;
     final private float STEP = 0.05f;
-    final private int puzzleSize = 5;
+    final private int puzzleSize = 7;
     final private int puzzleCubeLength = puzzleSize*puzzleSize*puzzleSize;
-    final private float[] puzzleOffsets = new float[]{-2, -2, -10};
+    final private float[] puzzleOffsets = new float[]{-3, -3, -3};
 
     private float[][] modelCube;
     private float[] camera;
@@ -70,6 +71,7 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
     private static final String OBJECT_SOUND_FILE = "audio/mosquito.mp3";
     private static final String FIND_SOUND_FILE = "audio/HelloVR_Activation.ogg";
     private MosquitoPlayer mosquitoPlayer;
+    private float[] mosquitoModel;
 
     public myStereoRenderer(Context context){
         this.myContext = context;
@@ -151,6 +153,7 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
             Matrix.translateM(modelCube[i], 0, -userShift[0], -userShift[1], -userShift[2]);
         }
         Matrix.translateM(modelFloor, 0, -userShift[0], -userShift[1], -userShift[2]);
+        Matrix.translateM(mosquitoModel, 0, -userShift[0], -userShift[1], -userShift[2]);
 
 //        //rotate the cube, mangle is how fast, x,y,z which directions it rotates.
 //        Matrix.rotateM(CubeMatrix0, 0, mAngle, 0.7f, 0.7f, 1.0f);
@@ -169,17 +172,20 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
         headTransform.getHeadView(headView, 0);
         headTransform.getQuaternion(headRotation, 0);
 
+        mosquitoPlayer.updateAudio(userPosition, mosquitoPosition, forwardVector);
+
         if(isMetMosquito()){
+            System.out.println("Metttttttttttttt!");
             successSourceId = gvrAudioEngine.createStereoSound(FIND_SOUND_FILE);
             gvrAudioEngine.playSound(successSourceId, false /* looping disabled */);
             resetPosition();
         }
-
-        gvrAudioEngine.setHeadPosition(userPosition[0], userPosition[1], userPosition[2]);
-        gvrAudioEngine.setHeadRotation(
-                headRotation[0], headRotation[1], headRotation[2], headRotation[3]);
-        // Regular update call to GVR audio engine.
-        gvrAudioEngine.update();
+//
+//        gvrAudioEngine.setHeadPosition(userPosition[0], userPosition[1], userPosition[2]);
+//        gvrAudioEngine.setHeadRotation(
+//                headRotation[0], headRotation[1], headRotation[2], headRotation[3]);
+//        // Regular update call to GVR audio engine.
+//        gvrAudioEngine.update();
     }
 
     private boolean isMetMosquito(){
@@ -187,7 +193,10 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
         for (int i = 0; i < 3; i++) {
             dist += (userPosition[i]-mosquitoPosition[i]) * (userPosition[i]-mosquitoPosition[i]);
         }
-        if(dist < 0.1) return true;
+        System.out.println("dist: "+dist);
+        if(dist < 0.1f) {
+            return true;
+        }
         return false;
     }
 
@@ -222,6 +231,10 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
             mCube.draw(mMVPMatrix);
         }
 
+        Matrix.multiplyMM(modelview, 0, view, 0, mosquitoModel, 0);
+        Matrix.multiplyMM(mMVPMatrix, 0, perspective, 0, modelview, 0);
+        fakeMosquito.draw(mMVPMatrix);
+
         //now calculate for the floor
         Matrix.multiplyMM(modelview, 0, view, 0, modelFloor, 0);
         // combine the model-view with the projection matrix
@@ -242,6 +255,7 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
     @Override
     public void onSurfaceCreated(EGLConfig eglConfig) {
         modelCube = new float[puzzleCubeLength][16];
+        mosquitoModel = new float[16];
         camera = new float[16];
         view = new float[16];
         mMVPMatrix = new float[16];
@@ -252,7 +266,7 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
         forwardVector = new float[3];
         userPosition = new float[]{0, 0, 0};
         userShift = new float[]{0, 0, 0};
-        mosquitoPosition = new float[]{0, 0, -4};
+        mosquitoPosition = new float[]{0, 0, -7};
         generator = new PuzzleGenerator();
         puzzleMap = generator.generatePuzzle(puzzleSize);
 
@@ -265,6 +279,7 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
         GLES30.glClearColor(0.1f, 0.1f, 0.1f, 0.5f); // Dark background so text shows up well.
         //initialize the cube code for drawing.
         mCube = new Cube();
+        fakeMosquito = new Polygon();
         mPyramid = new Pyramid();
 
 
@@ -278,29 +293,35 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
                 }
             }
         }
+
+        Matrix.setIdentityM(mosquitoModel, 0);
+        Matrix.translateM(mosquitoModel, 0, mosquitoPosition[0], mosquitoPosition[1], mosquitoPosition[2]);
         //floor object
         mFloor = new Floor();
         Matrix.setIdentityM(modelFloor, 0);
         Matrix.translateM(modelFloor, 0, 0, -floorDepth, 0); // Floor appears below user.
 
-        gvrAudioEngine = new GvrAudioEngine(myContext, GvrAudioEngine.RenderingMode.BINAURAL_HIGH_QUALITY);
+        mosquitoPlayer = new MosquitoPlayer(myContext);
 
-        new Thread(
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        // Start spatial audio playback of OBJECT_SOUND_FILE at the model position. The
-                        // returned sourceId handle is stored and allows for repositioning the sound object
-                        // whenever the target position changes.
-                        gvrAudioEngine.preloadSoundFile(OBJECT_SOUND_FILE);
-                        sourceId = gvrAudioEngine.createSoundObject(OBJECT_SOUND_FILE);
-                        gvrAudioEngine.setSoundObjectPosition(
-                                sourceId, mosquitoPosition[0], mosquitoPosition[1], mosquitoPosition[2]);
-                        gvrAudioEngine.playSound(sourceId, true /* looped playback */);
-                        gvrAudioEngine.preloadSoundFile(FIND_SOUND_FILE);
-                    }
-                })
-                .start();
+        gvrAudioEngine = new GvrAudioEngine(myContext, GvrAudioEngine.RenderingMode.BINAURAL_HIGH_QUALITY);
+        gvrAudioEngine.preloadSoundFile(FIND_SOUND_FILE);
+//
+//        new Thread(
+//                new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        // Start spatial audio playback of OBJECT_SOUND_FILE at the model position. The
+//                        // returned sourceId handle is stored and allows for repositioning the sound object
+//                        // whenever the target position changes.
+//                        gvrAudioEngine.preloadSoundFile(OBJECT_SOUND_FILE);
+//                        sourceId = gvrAudioEngine.createSoundObject(OBJECT_SOUND_FILE);
+//                        gvrAudioEngine.setSoundObjectPosition(
+//                                sourceId, mosquitoPosition[0], mosquitoPosition[1], mosquitoPosition[2]);
+//                        gvrAudioEngine.playSound(sourceId, true /* looped playback */);
+//                        gvrAudioEngine.preloadSoundFile(FIND_SOUND_FILE);
+//                    }
+//                })
+//                .start();
     }
 
     @Override
@@ -341,17 +362,19 @@ public class myStereoRenderer implements GvrView.StereoRenderer{
     }
 
     public void resetPosition(){
+        System.out.println("resetttttttttttt");
         for (int i = 0; i < puzzleCubeLength; i++) {
             Matrix.translateM(modelCube[i], 0, userPosition[0], userPosition[1], userPosition[2]);
         }
         Matrix.translateM(modelFloor, 0, userPosition[0], userPosition[1], userPosition[2]);
+        Matrix.translateM(mosquitoModel, 0, userPosition[0], userPosition[1], userPosition[2]);
         for (int i = 0; i < 3; i++) {
             userPosition[i] = 0;
         }
-        gvrAudioEngine.setHeadPosition(userPosition[0], userPosition[1], userPosition[2]);
-        gvrAudioEngine.setHeadRotation(
-                headRotation[0], headRotation[1], headRotation[2], headRotation[3]);
-        gvrAudioEngine.update();
+//        gvrAudioEngine.setHeadPosition(userPosition[0], userPosition[1], userPosition[2]);
+//        gvrAudioEngine.setHeadRotation(
+//                headRotation[0], headRotation[1], headRotation[2], headRotation[3]);
+//        gvrAudioEngine.update();
     }
 
     public void printMatrix(float[] matrix, String name){//column priority
